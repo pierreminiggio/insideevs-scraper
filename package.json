@@ -23,6 +23,7 @@
   "homepage": "https://github.com/pierreminiggio/insideevs-scraper#readme",
   "dependencies": {
     "cheerio": "*",
-    "node-fetch": "^2.6.1"
+    "node-fetch": "^2.6.1",
+    "puppeteer": "^10.2.0"
   }
 }
