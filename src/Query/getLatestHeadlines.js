@@ -48,5 +48,5 @@ export default async function getLatestHeadlines() {
         articles.push(new Headline(title, description, link, thumbnail))
     })
 
-    return articles;
+    return articles.reverse();
 }

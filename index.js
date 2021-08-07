@@ -1,4 +1,13 @@
-import getLatestHeadlines from './src/Service/getLatestHeadlines.js';
+import getLatestHeadlines from './src/Query/getLatestHeadlines.js';
+import getArticleContent from './src/Query/getArticleContent.js';
 
-const articles = await getLatestHeadlines()
-console.log(articles)
+const articleHeadlines = await getLatestHeadlines()
+
+for (const articleHeadlineKey in articleHeadlines) {
+
+    /** @type {Headline} articleHeadline */
+    const articleHeadline = articleHeadlines[articleHeadlineKey]
+    const articleContent = await getArticleContent(articleHeadline.link, true)
+
+    //break
+}
