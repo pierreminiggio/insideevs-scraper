@@ -88,7 +88,7 @@ export default class ArticleContentQuery {
                         const mainTweetSelector = hasReply ? mainTweetSelectorIfReply : articleSelector
 
                         const mainTweetContainerSelector = hasReply ? (mainTweetSelector + '>a+div>div+div') : articleSelector
-                        const mainTweetAuthorLinkSelector = mainTweetContainerSelector + hasReply ? ' a' : '>a+div>a+div>a'
+                        const mainTweetAuthorLinkSelector = mainTweetContainerSelector + (hasReply ? ' a' : '>a+div>a+div>a')
                         const mainTweetAuthorDisplayNameSelector = mainTweetAuthorLinkSelector + '>div>div'
                         const mainTweetAuthorDisplayName = await twitterPage.evaluate(mainTweetAuthorDisplayNameSelector => {
                             return document.querySelector(mainTweetAuthorDisplayNameSelector).innerText
@@ -99,7 +99,7 @@ export default class ArticleContentQuery {
                             return document.querySelector(mainTweetAuthorHandleSelector).innerText
                         }, mainTweetAuthorHandleSelector)
 
-                        const mainTweetContentSelector = mainTweetContainerSelector + '>div+div'
+                        const mainTweetContentSelector = mainTweetContainerSelector + '>div+div>div'
                         const mainTweetContent = await twitterPage.evaluate(getInnerTweetText, mainTweetContentSelector)
 
                         console.log(mainTweetAuthorDisplayName)
@@ -107,7 +107,9 @@ export default class ArticleContentQuery {
                         console.log(mainTweetContent)
 
                         if (hasReply) {
-                            // TODO GET REPLY INFOS
+                            // await twitterPage.waitForTimeout(90000)
+                            // await twitterPage.waitForTimeout(90000)
+                            // await twitterPage.waitForTimeout(90000)
                         }
 
                         await twitterPage.waitForTimeout(3000)
