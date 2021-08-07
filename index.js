@@ -1,13 +1,26 @@
+import puppeteer from 'puppeteer';
+import ArticleContentQuery from './src/Query/ArticleContentQuery.js';
 import getLatestHeadlines from './src/Query/getLatestHeadlines.js';
-import getArticleContent from './src/Query/getArticleContent.js';
 
 const articleHeadlines = await getLatestHeadlines()
+
+const show = true
+const browser = await puppeteer.launch({
+    headless: ! show,
+    args: ['--no-sandbox']
+})
+const page = await browser.newPage()
 
 for (const articleHeadlineKey in articleHeadlines) {
 
     /** @type {Headline} articleHeadline */
     const articleHeadline = articleHeadlines[articleHeadlineKey]
-    const articleContent = await getArticleContent(articleHeadline.link, true)
+
+    const articleContentQuery = new ArticleContentQuery(page)
+
+    const articleContent = await articleContentQuery.getArticleContent(articleHeadline.link)
 
     //break
 }
+
+await browser.close()
