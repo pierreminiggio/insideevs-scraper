@@ -1,5 +1,6 @@
 import Content from '../Entity/Content.js';
 import TextContent from '../Entity/TextContent.js';
+import TweetAuthor from '../Entity/TweetAuthor.js';
 
 export default class ArticleContentQuery {
 
@@ -89,27 +90,21 @@ export default class ArticleContentQuery {
 
                         const mainTweetContainerSelector = hasReply ? (mainTweetSelector + '>a+div>div+div') : articleSelector
                         const mainTweetAuthorLinkSelector = mainTweetContainerSelector + (hasReply ? ' a' : '>a+div>a+div>a')
-                        const mainTweetAuthorDisplayNameSelector = mainTweetAuthorLinkSelector + '>div>div'
-                        const mainTweetAuthorDisplayName = await twitterPage.evaluate(mainTweetAuthorDisplayNameSelector => {
-                            return document.querySelector(mainTweetAuthorDisplayNameSelector).innerText
-                        }, mainTweetAuthorDisplayNameSelector)
-
-                        const mainTweetAuthorHandleSelector = mainTweetAuthorLinkSelector + '>div>div+div'
-                        const mainTweetAuthorHandle = await twitterPage.evaluate(mainTweetAuthorHandleSelector => {
-                            return document.querySelector(mainTweetAuthorHandleSelector).innerText
-                        }, mainTweetAuthorHandleSelector)
+                        const mainTweetAuthor = await getAuthorDisplayNameAndHandle(twitterPage, mainTweetAuthorLinkSelector)
 
                         const mainTweetContentSelector = mainTweetContainerSelector + '>div+div>div'
                         const mainTweetContent = await twitterPage.evaluate(getInnerTweetText, mainTweetContentSelector)
 
-                        console.log(mainTweetAuthorDisplayName)
-                        console.log(mainTweetAuthorHandle)
+                        console.log('---------------')
+                        console.log('Author :')
+                        console.log(mainTweetAuthor)
+                        console.log('Content :')
                         console.log(mainTweetContent)
 
                         if (hasReply) {
-                            // await twitterPage.waitForTimeout(90000)
-                            // await twitterPage.waitForTimeout(90000)
-                            // await twitterPage.waitForTimeout(90000)
+                            await twitterPage.waitForTimeout(90000)
+                            await twitterPage.waitForTimeout(90000)
+                            await twitterPage.waitForTimeout(90000)
                         }
 
                         await twitterPage.waitForTimeout(3000)
@@ -152,4 +147,24 @@ const getInnerTweetText = tweetSelector => {
 
         return altEnd + splitOnClose.join('>')
     }).join(''), "text/html") . documentElement . textContent
+}
+
+/**
+ * @param {import('puppeteer').Page} twitterPage 
+ * @param {string} authorLinkSelector 
+ * 
+ * @returns {Promise<TweetAuthor>}
+ */
+const getAuthorDisplayNameAndHandle = async (twitterPage, authorLinkSelector) => {
+    const displayNameSelector = authorLinkSelector + '>div>div'
+    const displayName = await twitterPage.evaluate(displayNameSelector => {
+        return document.querySelector(displayNameSelector).innerText
+    }, displayNameSelector)
+
+    const authorHandleSelector = authorLinkSelector + '>div>div+div'
+    const authorHandle = await twitterPage.evaluate(authorHandleSelector => {
+        return document.querySelector(authorHandleSelector).innerText
+    }, authorHandleSelector)
+
+    return new TweetAuthor(displayName, authorHandle)
 }
