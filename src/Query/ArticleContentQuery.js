@@ -49,6 +49,11 @@ export default class ArticleContentQuery {
 
             if (tagName === 'P') {
                 const content = await scrapedContent.evaluate(element => element.innerText)
+                
+                if (! content) {
+                    continue
+                }
+
                 contents.push(new TextContent(content))
                 continue
             }
@@ -93,7 +98,7 @@ export default class ArticleContentQuery {
                             captureBeyondViewport: true,
                             clip: {x: 0, y: 0, width, height}
                         })
-                        
+
                         const binaryBuffer = screenshotBuffer.toString('base64')
 
                         const mainTweetSelectorIfReply = articleSelector + '>article'
