@@ -1,5 +1,7 @@
 import Content from '../Entity/Content.js';
+import EmbedTwitterContent from '../Entity/EmbedTwitterContent.js';
 import TextContent from '../Entity/TextContent.js';
+import Tweet from '../Entity/Tweet.js';
 import TweetAuthor from '../Entity/TweetAuthor.js';
 
 export default class ArticleContentQuery {
@@ -95,34 +97,27 @@ export default class ArticleContentQuery {
                         const mainTweetContentSelector = mainTweetContainerSelector + '>div+div>div'
                         const mainTweetContent = await twitterPage.evaluate(getInnerTweetText, mainTweetContentSelector)
 
-                        console.log('---------------')
-                        console.log('Author :')
-                        console.log(mainTweetAuthor)
-                        console.log('Content :')
-                        console.log(mainTweetContent)
+                        const mainTweet = new Tweet(mainTweetAuthor, mainTweetContent)
+
+                        let replyTweet = null
 
                         if (hasReply) {
-                            await twitterPage.waitForTimeout(90000)
-                            await twitterPage.waitForTimeout(90000)
-                            await twitterPage.waitForTimeout(90000)
+                            const replyTweetSelector = mainTweetSelector + '+div>div>a'
+                            const replyTweetAuthor = await getAuthorDisplayNameAndHandle(twitterPage, replyTweetSelector)
+                            const replyTweetContentSelector = mainTweetSelector + '+div+div>div'
+                            const replyTweetContent = await twitterPage.evaluate(getInnerTweetText, replyTweetContentSelector)
+
+                            replyTweet = new Tweet(replyTweetAuthor, replyTweetContent)
                         }
 
-                        await twitterPage.waitForTimeout(3000)
-                        // await twitterPage.waitForTimeout(90000)
-                        // await twitterPage.waitForTimeout(90000)
-                        // await twitterPage.waitForTimeout(90000)
+                        contents.push(new EmbedTwitterContent(mainTweet, replyTweet))
+
                         await twitterPage.close()
                         continue
                     }
                 }
             }
         }
-        // console.log(contents)
-
-
-        // await page.waitForTimeout(90000)
-        // await page.waitForTimeout(90000)
-        // await page.waitForTimeout(90000)
 
         return contents
     }

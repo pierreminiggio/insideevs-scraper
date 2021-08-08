@@ -1,4 +1,5 @@
 export default class TweetAuthor {
+    
     /** @type {string} */
     displayName;
 
