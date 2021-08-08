@@ -107,6 +107,7 @@ export default class ArticleContentQuery {
 
                         const articleSelector = 'article'
                         await twitterPage.waitForSelector(articleSelector)
+                        await twitterPage.waitForTimeout(3000)
 
                         const {width, height} = await twitterPage.evaluate(() => {
                             const container = document.querySelector('#app>div>div>div')
