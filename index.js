@@ -1,6 +1,7 @@
 import puppeteer from 'puppeteer';
 import ArticleContentQuery from './src/Query/ArticleContentQuery.js';
 import getLatestHeadlines from './src/Query/getLatestHeadlines.js';
+import fs from 'fs'
 
 const articleHeadlines = await getLatestHeadlines()
 
@@ -20,8 +21,19 @@ for (const articleHeadlineKey in articleHeadlines) {
 
     const articleContent = await articleContentQuery.getArticleContent(articleHeadline.link)
 
-    console.log(articleContent)
-    break
+    for (const contentKey in articleContent) {
+        const content = articleContent[contentKey]
+
+        if (content.type !== 'twitter') {
+            continue
+        }
+
+        console.log(content)
+
+        fs.writeFileSync('./test.png', content.screenshot, 'base64')
+        process.exit()
+    }
+
 }
 
 await browser.close()

@@ -66,8 +66,8 @@ export default class ArticleContentQuery {
 
                         let twitterSrc = null
                         do {
-                        twitterSrc = await scrapedContent.evaluate(
-                                (element, iframeSelector) => element.querySelector('iframe')?.src,
+                            twitterSrc = await scrapedContent.evaluate(
+                                (element, iframeSelector) => element.querySelector(iframeSelector)?.src,
                                 iframeSelector
                             )
                         } while (! twitterSrc)
@@ -83,8 +83,11 @@ export default class ArticleContentQuery {
                         const articleSelector = 'article'
                         await twitterPage.waitForSelector(articleSelector)
 
-                        const screenshotBuffer = await twitterPage.screenshot()
-                        const binaryBuffer = screenshotBuffer.toString('binary')
+                        const screenshotBuffer = await twitterPage.screenshot({
+                            fullPage: true,
+                            captureBeyondViewport: true
+                        })
+                        const binaryBuffer = screenshotBuffer.toString('base64')
 
                         const mainTweetSelectorIfReply = articleSelector + '>article'
                         const hasReply = await twitterPage.evaluate(mainTweetSelectorIfReply => {
