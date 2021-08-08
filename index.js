@@ -20,7 +20,8 @@ for (const articleHeadlineKey in articleHeadlines) {
 
     const articleContent = await articleContentQuery.getArticleContent(articleHeadline.link)
 
-    //break
+    console.log(articleContent)
+    break
 }
 
 await browser.close()

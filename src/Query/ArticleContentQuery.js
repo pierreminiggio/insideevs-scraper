@@ -83,6 +83,9 @@ export default class ArticleContentQuery {
                         const articleSelector = 'article'
                         await twitterPage.waitForSelector(articleSelector)
 
+                        const screenshotBuffer = await twitterPage.screenshot()
+                        const binaryBuffer = screenshotBuffer.toString('binary')
+
                         const mainTweetSelectorIfReply = articleSelector + '>article'
                         const hasReply = await twitterPage.evaluate(mainTweetSelectorIfReply => {
                             return document.querySelector(mainTweetSelectorIfReply) !== null
@@ -110,7 +113,7 @@ export default class ArticleContentQuery {
                             replyTweet = new Tweet(replyTweetAuthor, replyTweetContent)
                         }
 
-                        contents.push(new EmbedTwitterContent(mainTweet, replyTweet))
+                        contents.push(new EmbedTwitterContent(mainTweet, replyTweet, binaryBuffer))
 
                         await twitterPage.close()
                         continue
