@@ -1,8 +1,11 @@
 import BlockQuoteContent from '../Entity/BlockQuoteContent.js';
 import CaptionedImageContent from '../Entity/CaptionedImageContent.js';
 import Content from '../Entity/Content.js';
+import EmbedContent from '../Entity/EmbedContent.js';
 import EmbedTwitterContent from '../Entity/EmbedTwitterContent.js';
+import ImageContent from '../Entity/ImageContent.js';
 import TextContent from '../Entity/TextContent.js';
+import TitleContent from '../Entity/TitleContent.js';
 import Tweet from '../Entity/Tweet.js';
 import TweetAuthor from '../Entity/TweetAuthor.js';
 
@@ -33,6 +36,8 @@ export default class ArticleContentQuery {
         const bodySelector = 'body'
         await page.waitForSelector(bodySelector)
 
+        await page.waitForTimeout(1000)
+
         const cookiesButtonSelector = '#onetrust-accept-btn-handler'
         const hasAcceptCookiesButton = await page.evaluate(cookiesButtonSelector => {
             return document.querySelector(cookiesButtonSelector) !== null
@@ -41,6 +46,8 @@ export default class ArticleContentQuery {
         if (hasAcceptCookiesButton) {
             await page.click(cookiesButtonSelector)
         }
+
+        await page.waitForTimeout(3000)
 
         const contentsSelector = '.content-wrapper>.postBody>*'
         const scrapedContents = await page.$$(contentsSelector)
@@ -53,6 +60,13 @@ export default class ArticleContentQuery {
                 const content = await scrapedContent.evaluate(element => element.innerText)
 
                 if (! content) {
+                    continue
+                }
+
+                const classNames = Object.values(await scrapedContent.evaluate(element => element.classList))
+
+                if (classNames.includes('trending-content_header')) {
+                    // link to another article, I won't use that
                     continue
                 }
 
@@ -140,6 +154,18 @@ export default class ArticleContentQuery {
                 if (classNames.includes('relatedContent-new')) {
                     break
                 }
+
+                const iframeSelector = 'iframe'
+                //await page.waitForTimeout(3000)
+                const iframeSrc = await scrapedContent.evaluate(
+                    (element, iframeSelector) => element.querySelector(iframeSelector)?.dataset?.src,
+                    iframeSelector
+                )
+
+                if (iframeSrc) {
+                    contents.push(new EmbedContent(iframeSrc))
+                    continue
+                }
             }
 
             if (tagName === 'BLOCKQUOTE') {
@@ -150,6 +176,17 @@ export default class ArticleContentQuery {
                 }
 
                 contents.push(new BlockQuoteContent(content))
+                continue
+            }
+
+            if (tagName === 'H3' || tagName === 'H4') {
+                const content = await scrapedContent.evaluate(element => element.innerText)
+
+                if (! content) {
+                    continue
+                }
+
+                contents.push(new TitleContent(content))
                 continue
             }
 
@@ -169,6 +206,33 @@ export default class ArticleContentQuery {
                     }
                 }
 
+                if (classNames.includes('content-header')) {
+                    const content = await scrapedContent.evaluate(element => element.innerText)
+
+                    if (! content) {
+                        continue
+                    }
+
+                    contents.push(new TitleContent(content))
+                    continue
+                }
+
+                if (classNames.includes('msnt-photo-thumb-gallery')) {
+                    const imageSrc = await scrapedContent.evaluate(element => element.querySelector('source')?.dataset?.srcset)
+
+                    if (! imageSrc) {
+                        continue
+                    }
+
+                    contents.push(new ImageContent(imageSrc))
+                    continue
+                }
+
+                if (classNames.includes('wrapper-related-item')) {
+                    // link to another article, I won't use that
+                    continue
+                }
+
                 
                 const divInnerHTML = (await scrapedContent.evaluate(element => element.innerHTML)).replace('&nbsp;', ' ').trim()
 
@@ -178,10 +242,13 @@ export default class ArticleContentQuery {
                 }
 
                 console.log('unknown div')
+                console.log(classNames)
+                console.log(divInnerHTML)
                 await page.waitForTimeout(90000)
             }
 
             console.log('unknown tag')
+            console.log(tagName)
             console.log(await scrapedContent.evaluate(element => element.innerHTML))
             await page.waitForTimeout(90000)
         }
