@@ -1,3 +1,4 @@
+import BlockQuoteContent from '../Entity/BlockQuoteContent.js';
 import CaptionedImageContent from '../Entity/CaptionedImageContent.js';
 import Content from '../Entity/Content.js';
 import EmbedTwitterContent from '../Entity/EmbedTwitterContent.js';
@@ -141,6 +142,17 @@ export default class ArticleContentQuery {
                 }
             }
 
+            if (tagName === 'BLOCKQUOTE') {
+                const content = await scrapedContent.evaluate(element => element.innerText)
+
+                if (! content) {
+                    continue
+                }
+
+                contents.push(new BlockQuoteContent(content))
+                continue
+            }
+
             if (tagName === 'DIV') {
                 const classNames = Object.values(await scrapedContent.evaluate(element => element.classList))
 
@@ -157,8 +169,15 @@ export default class ArticleContentQuery {
                     }
                 }
 
+                
+                const divInnerHTML = (await scrapedContent.evaluate(element => element.innerHTML)).replace('&nbsp;', ' ').trim()
+
+                if (! divInnerHTML) {
+                    // Empty div, whatever
+                    continue
+                }
+
                 console.log('unknown div')
-                console.log(await scrapedContent.evaluate(element => element.innerHTML))
                 await page.waitForTimeout(90000)
             }
 
