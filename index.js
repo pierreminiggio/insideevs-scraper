@@ -20,20 +20,7 @@ for (const articleHeadlineKey in articleHeadlines) {
     const articleContentQuery = new ArticleContentQuery(page)
 
     const articleContent = await articleContentQuery.getArticleContent(articleHeadline.link)
-
-    for (const contentKey in articleContent) {
-        const content = articleContent[contentKey]
-
-        if (content.type !== 'twitter') {
-            continue
-        }
-
-        console.log(content)
-
-        fs.writeFileSync('./test.png', content.screenshot, 'base64')
-        process.exit()
-    }
-
+    console.log(articleContent)
 }
 
 await browser.close()
