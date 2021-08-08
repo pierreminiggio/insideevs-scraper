@@ -1,3 +1,4 @@
+import CaptionedImageContent from '../Entity/CaptionedImageContent.js';
 import Content from '../Entity/Content.js';
 import EmbedTwitterContent from '../Entity/EmbedTwitterContent.js';
 import TextContent from '../Entity/TextContent.js';
@@ -49,7 +50,7 @@ export default class ArticleContentQuery {
 
             if (tagName === 'P') {
                 const content = await scrapedContent.evaluate(element => element.innerText)
-                
+
                 if (! content) {
                     continue
                 }
@@ -134,7 +135,36 @@ export default class ArticleContentQuery {
                         continue
                     }
                 }
+
+                if (classNames.includes('relatedContent-new')) {
+                    break
+                }
             }
+
+            if (tagName === 'DIV') {
+                const classNames = Object.values(await scrapedContent.evaluate(element => element.classList))
+
+                if (classNames.includes('table-wrapper')) {
+                    const imgSelector = 'img'
+                    const hasImg = await scrapedContent.evaluate((element, imgSelector) => element.querySelector(imgSelector) !== null, imgSelector)
+
+                    if (hasImg) {
+                        const imgSrc = await scrapedContent.evaluate((element, imgSelector) => element.querySelector(imgSelector).src, imgSelector)
+                        const caption = await scrapedContent.evaluate(element => element.innerText)
+                        contents.push(new CaptionedImageContent(imgSrc, caption))
+
+                        continue
+                    }
+                }
+
+                console.log('unknown div')
+                console.log(await scrapedContent.evaluate(element => element.innerHTML))
+                await page.waitForTimeout(90000)
+            }
+
+            console.log('unknown tag')
+            console.log(await scrapedContent.evaluate(element => element.innerHTML))
+            await page.waitForTimeout(90000)
         }
 
         return contents

@@ -20,7 +20,6 @@ for (const articleHeadlineKey in articleHeadlines) {
     const articleContentQuery = new ArticleContentQuery(page)
 
     const articleContent = await articleContentQuery.getArticleContent(articleHeadline.link)
-    console.log(articleContent)
 }
 
 await browser.close()
