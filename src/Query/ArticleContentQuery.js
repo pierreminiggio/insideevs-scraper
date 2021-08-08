@@ -45,9 +45,8 @@ export default class ArticleContentQuery {
 
         if (hasAcceptCookiesButton) {
             await page.click(cookiesButtonSelector)
+            await page.waitForTimeout(3000)
         }
-
-        await page.waitForTimeout(3000)
 
         const contentsSelector = '.content-wrapper>.postBody>*'
         const scrapedContents = await page.$$(contentsSelector)
