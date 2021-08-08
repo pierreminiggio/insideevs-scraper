@@ -20,6 +20,7 @@ export default async function getLatestHeadlines() {
 
         let title
         let description
+        let pubDate
         let link
         let thumbnail
 
@@ -34,6 +35,11 @@ export default async function getLatestHeadlines() {
                 return
             }
 
+            if (itemChild.name === 'pubDate') {
+                pubDate = itemChild.children[0].data
+                return
+            }
+
             if (itemChild.name === 'link') {
                 link = itemChild.children[0].data.split('?')[0]
                 return
@@ -45,7 +51,7 @@ export default async function getLatestHeadlines() {
 
         })
 
-        articles.push(new Headline(title, description, link, thumbnail))
+        articles.push(new Headline(title, description, link, thumbnail, pubDate))
     })
 
     return articles.reverse();

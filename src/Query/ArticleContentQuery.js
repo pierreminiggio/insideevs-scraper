@@ -23,9 +23,10 @@ export default class ArticleContentQuery {
 
     /**
      * @param {string} articleUrl
+     * @param {boolean} debugMode
      * @return {Promise<Array<Content>>}
      */
-    async getArticleContent(articleUrl) {
+    async getArticleContent(articleUrl, debugMode) {
         /** @type {Array<Content>} contents */
         const contents = []
         const page = this.page
@@ -69,6 +70,10 @@ export default class ArticleContentQuery {
                     continue
                 }
 
+                if (classNames.includes('meta')) {
+                    // Looks like it's an ad, it featured EVANNEX in the meta p's from https://insideevs.com/news/519686/tesla-elon-musk-ai-day/
+                    continue
+                }
                 contents.push(new TextContent(content))
                 continue
             }
@@ -155,7 +160,6 @@ export default class ArticleContentQuery {
                 }
 
                 const iframeSelector = 'iframe'
-                //await page.waitForTimeout(3000)
                 const iframeSrc = await scrapedContent.evaluate(
                     (element, iframeSelector) => element.querySelector(iframeSelector)?.dataset?.src,
                     iframeSelector
@@ -240,16 +244,25 @@ export default class ArticleContentQuery {
                     continue
                 }
 
-                console.log('unknown div')
-                console.log(classNames)
-                console.log(divInnerHTML)
-                await page.waitForTimeout(90000)
+                if (debugMode) {
+                    console.log('unknown div')
+                    console.log(classNames)
+                    console.log(divInnerHTML)
+                    await page.waitForTimeout(90000)
+                } else {
+                    throw new Error('unknown div with classes ' + (classNames.join()) + ', inner HTML : ' + divInnerHTML)
+                }
+                
             }
 
-            console.log('unknown tag')
-            console.log(tagName)
-            console.log(await scrapedContent.evaluate(element => element.innerHTML))
-            await page.waitForTimeout(90000)
+            if (debugMode) {
+                console.log('unknown tag')
+                console.log(tagName)
+                console.log(await scrapedContent.evaluate(element => element.innerHTML))
+                await page.waitForTimeout(90000)
+            } else {
+                throw new Error('unknown tag ' + tagName + ', inner HTML : ' + await scrapedContent.evaluate(element => element.innerHTML))
+            }
         }
 
         return contents
