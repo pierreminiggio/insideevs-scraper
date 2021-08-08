@@ -83,10 +83,17 @@ export default class ArticleContentQuery {
                         const articleSelector = 'article'
                         await twitterPage.waitForSelector(articleSelector)
 
-                        const screenshotBuffer = await twitterPage.screenshot({
-                            fullPage: true,
-                            captureBeyondViewport: true
+                        const {width, height} = await twitterPage.evaluate(() => {
+                            const container = document.querySelector('#app>div>div>div')
+
+                            return {width: container.offsetWidth, height: container.offsetHeight}
                         })
+
+                        const screenshotBuffer = await twitterPage.screenshot({
+                            captureBeyondViewport: true,
+                            clip: {x: 0, y: 0, width, height}
+                        })
+                        
                         const binaryBuffer = screenshotBuffer.toString('base64')
 
                         const mainTweetSelectorIfReply = articleSelector + '>article'
