@@ -1,0 +1,18 @@
+
+on:
+  workflow_dispatch:
+    inputs:
+name: Scrape
+jobs:
+  scrape:
+    name: Scrape
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@main
+      - uses: actions/setup-node@main
+      - run: sudo apt update
+      - run: npm i
+      - run: npm start -- $API $TOKEN
+        env:
+          API: ${{ secrets.API }}
+          TOKEN: ${{ secrets.TOKEN }}
