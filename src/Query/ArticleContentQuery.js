@@ -62,6 +62,10 @@ export default class ArticleContentQuery {
                 if (! content) {
                     continue
                 }
+                
+                if (! /\d/.test(content) && ! /[a-zA-Z]/.test(content)) {
+                    continue
+                }
 
                 const classNames = Object.values(await scrapedContent.evaluate(element => element.classList))
 
