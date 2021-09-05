@@ -1,6 +1,7 @@
 import puppeteer from 'puppeteer';
 import ArticleContentQuery from './src/Query/ArticleContentQuery.js';
 import getLatestHeadlines from './src/Query/getLatestHeadlines.js';
+import Headline from './src/Entity/Headline.js'
 import fs from 'fs'
 import path from 'path'
 import { base64encode } from 'nodejs-base64'
@@ -49,6 +50,11 @@ for (const articleHeadlineKey in articleHeadlines) {
     const articleHeadline = articleHeadlines[articleHeadlineKey]
     const articleId = sanitize(base64encode(articleHeadline.pubDate))
 
+    if (debugMode) {
+        console.log('Headline ' + articleHeadline.title)
+        console.log(articleHeadline.link)
+    }
+
     if (hasApi) {
         const headlineSaveResponse = await fetch(apiUrl + '/headline', {
             method: 'POST',
@@ -60,6 +66,9 @@ for (const articleHeadlineKey in articleHeadlines) {
         })
 
         if ([409, 500].includes(headlineSaveResponse.status)) {
+            if (debugMode) {
+                console.log('Headline save response : ' + headlineSaveResponse.status)
+            }
             continue
         }
     }
@@ -67,6 +76,10 @@ for (const articleHeadlineKey in articleHeadlines) {
     const articleContentQuery = new ArticleContentQuery(page)
 
     const articleContent = await articleContentQuery.getArticleContent(articleHeadline.link, debugMode)
+
+    if (debugMode) {
+        console.log('Contents ' + articleContent.length)
+    }
 
     if (hasApi) {
         await fetch(apiUrl + '/content', {

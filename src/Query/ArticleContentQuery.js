@@ -91,71 +91,7 @@ export default class ArticleContentQuery {
                     )
 
                     if (isTwitter) {
-                        const iframeSelector = 'iframe'
-
-                        let twitterSrc = null
-                        do {
-                            twitterSrc = await scrapedContent.evaluate(
-                                (element, iframeSelector) => element.querySelector(iframeSelector)?.src,
-                                iframeSelector
-                            )
-                        } while (! twitterSrc)
-
-
-                        if (! twitterSrc) {
-                            continue
-                        }
-
-                        const twitterPage = await browser.newPage()
-                        await twitterPage.goto(twitterSrc)
-
-                        const articleSelector = 'article'
-                        await twitterPage.waitForSelector(articleSelector)
-                        await twitterPage.waitForTimeout(3000)
-
-                        const {width, height} = await twitterPage.evaluate(() => {
-                            const container = document.querySelector('#app>div>div>div')
-
-                            return {width: container.offsetWidth, height: container.offsetHeight}
-                        })
-
-                        const screenshotBuffer = await twitterPage.screenshot({
-                            captureBeyondViewport: true,
-                            clip: {x: 0, y: 0, width, height}
-                        })
-
-                        const binaryBuffer = screenshotBuffer.toString('base64')
-
-                        const mainTweetSelectorIfReply = articleSelector + '>article'
-                        const hasReply = await twitterPage.evaluate(mainTweetSelectorIfReply => {
-                            return document.querySelector(mainTweetSelectorIfReply) !== null
-                        }, mainTweetSelectorIfReply)
-
-                        const mainTweetSelector = hasReply ? mainTweetSelectorIfReply : articleSelector
-
-                        const mainTweetContainerSelector = hasReply ? (mainTweetSelector + '>a+div>div+div') : articleSelector
-                        const mainTweetAuthorLinkSelector = mainTweetContainerSelector + (hasReply ? ' a' : '>a+div>a+div>a')
-                        const mainTweetAuthor = await getAuthorDisplayNameAndHandle(twitterPage, mainTweetAuthorLinkSelector)
-
-                        const mainTweetContentSelector = mainTweetContainerSelector + '>div+div>div'
-                        const mainTweetContent = await twitterPage.evaluate(getInnerTweetText, mainTweetContentSelector)
-
-                        const mainTweet = new Tweet(mainTweetAuthor, mainTweetContent)
-
-                        let replyTweet = null
-
-                        if (hasReply) {
-                            const replyTweetSelector = mainTweetSelector + '+div>div>a'
-                            const replyTweetAuthor = await getAuthorDisplayNameAndHandle(twitterPage, replyTweetSelector)
-                            const replyTweetContentSelector = mainTweetSelector + '+div+div>div'
-                            const replyTweetContent = await twitterPage.evaluate(getInnerTweetText, replyTweetContentSelector)
-
-                            replyTweet = new Tweet(replyTweetAuthor, replyTweetContent)
-                        }
-
-                        contents.push(new EmbedTwitterContent(mainTweet, replyTweet, binaryBuffer))
-
-                        await twitterPage.close()
+                        await pushNewTwitterContent(scrapedContent, browser, contents)
                         continue
                     }
                 }
@@ -249,6 +185,15 @@ export default class ArticleContentQuery {
                     continue
                 }
 
+                const isTwitter = await scrapedContent.evaluate(
+                    element => element.querySelector('.twitter-tweet') !== null
+                )
+
+                if (isTwitter) {
+                    await pushNewTwitterContent(scrapedContent, browser, contents)
+                    continue
+                }
+
                 if (debugMode) {
                     console.log('unknown div')
                     console.log(classNames)
@@ -257,7 +202,24 @@ export default class ArticleContentQuery {
                 } else {
                     throw new Error('unknown div with classes ' + (classNames.join()) + ', inner HTML : ' + divInnerHTML)
                 }
+            }
+
+            if (tagName === 'UL') {
+                const lis = await scrapedContent.$$('li')
                 
+                for (const liIndex in lis) {
+                    const li = lis[liIndex]
+
+                    const liContent = await li.evaluate(element => element.innerText)
+
+                    if (! liContent) {
+                        continue
+                    }
+
+                    contents.push(new TextContent('- ' + liContent))
+                }
+
+                continue
             }
 
             if (debugMode) {
@@ -313,4 +275,78 @@ const getAuthorDisplayNameAndHandle = async (twitterPage, authorLinkSelector) =>
     }, authorHandleSelector)
 
     return new TweetAuthor(displayName, authorHandle)
+}
+
+/**
+ * @param {import('puppeteer').ElementHandle<Element>} scrapedContent
+ * @param {import('puppeteer').Browser} browser
+ * @param {Array<Content>} contents
+ * 
+ * @returns {void} 
+ */
+const pushNewTwitterContent = async (scrapedContent, browser, contents) => {
+    const iframeSelector = 'iframe'
+
+    let twitterSrc = null
+    do {
+        twitterSrc = await scrapedContent.evaluate(
+            (element, iframeSelector) => element.querySelector(iframeSelector)?.src,
+            iframeSelector
+        )
+    } while (! twitterSrc)
+
+    if (! twitterSrc) {
+        return
+    }
+
+    const twitterPage = await browser.newPage()
+    await twitterPage.goto(twitterSrc)
+
+    const articleSelector = 'article'
+    await twitterPage.waitForSelector(articleSelector)
+    await twitterPage.waitForTimeout(3000)
+
+    const {width, height} = await twitterPage.evaluate(() => {
+        const container = document.querySelector('#app>div>div>div')
+
+        return {width: container.offsetWidth, height: container.offsetHeight}
+    })
+
+    const screenshotBuffer = await twitterPage.screenshot({
+        captureBeyondViewport: true,
+        clip: {x: 0, y: 0, width, height}
+    })
+
+    const binaryBuffer = screenshotBuffer.toString('base64')
+
+    const mainTweetSelectorIfReply = articleSelector + '>article'
+    const hasReply = await twitterPage.evaluate(mainTweetSelectorIfReply => {
+        return document.querySelector(mainTweetSelectorIfReply) !== null
+    }, mainTweetSelectorIfReply)
+
+    const mainTweetSelector = hasReply ? mainTweetSelectorIfReply : articleSelector
+
+    const mainTweetContainerSelector = hasReply ? (mainTweetSelector + '>a+div>div+div') : articleSelector
+    const mainTweetAuthorLinkSelector = mainTweetContainerSelector + (hasReply ? ' a' : '>a+div>a+div>a')
+    const mainTweetAuthor = await getAuthorDisplayNameAndHandle(twitterPage, mainTweetAuthorLinkSelector)
+
+    const mainTweetContentSelector = mainTweetContainerSelector + '>div+div>div'
+    const mainTweetContent = await twitterPage.evaluate(getInnerTweetText, mainTweetContentSelector)
+
+    const mainTweet = new Tweet(mainTweetAuthor, mainTweetContent)
+
+    let replyTweet = null
+
+    if (hasReply) {
+        const replyTweetSelector = mainTweetSelector + '+div>div>a'
+        const replyTweetAuthor = await getAuthorDisplayNameAndHandle(twitterPage, replyTweetSelector)
+        const replyTweetContentSelector = mainTweetSelector + '+div+div>div'
+        const replyTweetContent = await twitterPage.evaluate(getInnerTweetText, replyTweetContentSelector)
+
+        replyTweet = new Tweet(replyTweetAuthor, replyTweetContent)
+    }
+
+    contents.push(new EmbedTwitterContent(mainTweet, replyTweet, binaryBuffer))
+
+    await twitterPage.close()
 }
