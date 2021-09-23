@@ -204,7 +204,7 @@ export default class ArticleContentQuery {
                 }
             }
 
-            if (tagName === 'UL') {
+            if (tagName === 'UL' || tagName === 'OL') {
                 const lis = await scrapedContent.$$('li')
                 
                 for (const liIndex in lis) {
