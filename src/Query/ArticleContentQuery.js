@@ -320,6 +320,7 @@ const pushNewTwitterContent = async (scrapedContent, browser, contents) => {
     const binaryBuffer = screenshotBuffer.toString('base64')
     
     if (binaryBuffer === 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAAXNSR0IArs4c6QAAAAtJREFUGJVj+A8EAAn7A\/1Xn9bZAAAAAElFTkSuQmCC') {
+        console.error(await twitterPage.evaluate(() => document.head.outerHTML + document.body.outerHTML))
         throw new Error('Twitter screenshot is blank')
     }
 
