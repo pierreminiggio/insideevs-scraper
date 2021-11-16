@@ -322,7 +322,7 @@ const pushNewTwitterContent = async (scrapedContent, browser, contents) => {
     await twitterPage.waitForTimeout(3000)
 
     const {width, height} = await twitterPage.evaluate(() => {
-        const container = document.querySelector('#app>div>div>div')
+        const container = document.querySelector('#app>div>div>div:not(:empty)')
 
         return {width: container.offsetWidth, height: container.offsetHeight}
     })
