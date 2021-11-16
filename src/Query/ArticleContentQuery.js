@@ -209,6 +209,21 @@ export default class ArticleContentQuery {
                     continue
                 }
 
+                if (classNames.includes('twitter-tweet') && classNames.includes('twitter-tweet-rendered')) { // WTF is that weird paragraph class name ?
+                    const content = await scrapedContent.evaluate(element => element.innerText)
+
+                    if (! content) {
+                        continue
+                    }
+
+                    if (! /\d/.test(content) && ! /[a-zA-Z]/.test(content)) {
+                        continue
+                    }
+
+                    contents.push(new TextContent(content))
+                    continue
+                }
+
                 if (debugMode) {
                     console.log('unknown div')
                     console.log(classNames)
