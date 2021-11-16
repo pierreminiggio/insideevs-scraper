@@ -156,13 +156,28 @@ export default class ArticleContentQuery {
                     const imgSelector = 'img'
                     const hasImg = await scrapedContent.evaluate((element, imgSelector) => element.querySelector(imgSelector) !== null, imgSelector)
 
+                    const caption = await scrapedContent.evaluate(element => element.innerText)
+
                     if (hasImg) {
                         const imgSrc = await scrapedContent.evaluate((element, imgSelector) => element.querySelector(imgSelector).src, imgSelector)
-                        const caption = await scrapedContent.evaluate(element => element.innerText)
                         contents.push(new CaptionedImageContent(imgSrc, caption))
 
                         continue
                     }
+
+                    const content = caption
+
+                    if (! content) {
+                        continue
+                    }
+
+                    if (! /\d/.test(content) && ! /[a-zA-Z]/.test(content)) {
+                        continue
+                    }
+
+                    contents.push(new TextContent(content))
+
+                    continue
                 }
 
                 if (classNames.includes('content-header')) {
