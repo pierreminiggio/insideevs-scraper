@@ -17,7 +17,7 @@ if (args.length !== 4 && args.length !== 5) {
 
 const apiUrl = args[2]
 const apiToken = args[3]
-const hasApi = apiUrl && apiToken
+const hasApi = apiUrl !== "''" && apiToken !== "''"
 
 /** @type {Headers} */
 let headers

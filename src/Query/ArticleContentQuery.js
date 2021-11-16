@@ -85,6 +85,21 @@ export default class ArticleContentQuery {
             if (tagName === 'SECTION') {
                 const classNames = Object.values(await scrapedContent.evaluate(element => element.classList))
 
+                if (classNames.includes('widget_pdf')) { // PDF Title
+                    const content = await scrapedContent.evaluate(element => element.innerText)
+
+                    if (! content) {
+                        continue
+                    }
+
+                    if (! /\d/.test(content) && ! /[a-zA-Z]/.test(content)) {
+                        continue
+                    }
+
+                    contents.push(new TextContent(content))
+                    continue
+                }
+
                 if (classNames.includes('embed-item')) {
                     const isTwitter = await scrapedContent.evaluate(
                         element => element.querySelector('.twitter-tweet') !== null
