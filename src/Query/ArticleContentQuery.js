@@ -152,6 +152,13 @@ export default class ArticleContentQuery {
             if (tagName === 'DIV') {
                 const classNames = Object.values(await scrapedContent.evaluate(element => element.classList))
 
+                if (
+                    classNames.includes('adgrid-ad-target')
+                    || classNames.includes('adgrid-ad-container')
+                ) {
+                    continue; // Ads
+                }
+
                 if (classNames.includes('table-wrapper')) {
                     const imgSelector = 'img'
                     const hasImg = await scrapedContent.evaluate((element, imgSelector) => element.querySelector(imgSelector) !== null, imgSelector)
