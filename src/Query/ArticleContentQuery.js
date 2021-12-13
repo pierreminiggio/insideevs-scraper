@@ -52,6 +52,8 @@ export default class ArticleContentQuery {
         const contentsSelector = '.content-wrapper>.postBody>*'
         const scrapedContents = await page.$$(contentsSelector)
 
+        const doneString = 'done'
+
         /**
          * @param {import('puppeteer').ElementHandle<Element>} scrapedContent 
          * 
@@ -116,7 +118,7 @@ export default class ArticleContentQuery {
                 }
 
                 if (classNames.includes('relatedContent-new')) {
-                    return 'done'
+                    return doneString
                 }
 
                 const iframeSelector = 'iframe'
@@ -161,8 +163,8 @@ export default class ArticleContentQuery {
 
                             const handleMosaicChildResult = handleScrapedContent(mosaicChild)
 
-                            if (handleMosaicChildResult === 'break') {
-                                return 'break'
+                            if (handleMosaicChildResult === doneString) {
+                                return doneString
                             }
                         }
 
