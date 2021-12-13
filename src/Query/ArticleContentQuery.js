@@ -243,7 +243,15 @@ export default class ArticleContentQuery {
                 }
 
                 if (classNames.includes('msnt-photo-thumb-gallery')) {
-                    const imageSrc = await scrapedContent.evaluate(element => element.querySelector('source')?.dataset?.srcset)
+                    const imageSrc = await scrapedContent.evaluate(element => {
+                        const source = element.querySelector('source')
+
+                        if (source) {
+                            return
+                        }
+
+                        return source.dataset?.srcset || source.getAttribute('srcset')
+                    })
 
                     if (! imageSrc) {
                         return
