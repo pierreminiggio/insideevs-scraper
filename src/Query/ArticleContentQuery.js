@@ -248,7 +248,7 @@ export default class ArticleContentQuery {
                     const imageSrc = await scrapedContent.evaluate(element => {
                         const source = element.querySelector('source')
 
-                        if (source) {
+                        if (! source) {
                             return
                         }
 
