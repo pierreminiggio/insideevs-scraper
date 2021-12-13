@@ -52,34 +52,38 @@ export default class ArticleContentQuery {
         const contentsSelector = '.content-wrapper>.postBody>*'
         const scrapedContents = await page.$$(contentsSelector)
 
-        for (const scrapedContentKey in scrapedContents) {
-            const scrapedContent = scrapedContents[scrapedContentKey]
+        /**
+         * @param {import('puppeteer').ElementHandle<Element>} scrapedContent 
+         * 
+         * @returns {string|undefined}
+         */
+        const handleScrapedContent = async (scrapedContent) => {
             const tagName = await scrapedContent.evaluate(element => element.tagName)
 
             if (tagName === 'P') {
                 const content = await scrapedContent.evaluate(element => element.innerText)
 
                 if (! content) {
-                    continue
+                    return
                 }
                 
                 if (! /\d/.test(content) && ! /[a-zA-Z]/.test(content)) {
-                    continue
+                    return
                 }
 
                 const classNames = Object.values(await scrapedContent.evaluate(element => element.classList))
 
                 if (classNames.includes('trending-content_header')) {
                     // link to another article, I won't use that
-                    continue
+                    return
                 }
 
                 if (classNames.includes('meta')) {
                     // Looks like it's an ad, it featured EVANNEX in the meta p's from https://insideevs.com/news/519686/tesla-elon-musk-ai-day/
-                    continue
+                    return
                 }
                 contents.push(new TextContent(content))
-                continue
+                return
             }
 
             if (tagName === 'SECTION') {
@@ -89,15 +93,15 @@ export default class ArticleContentQuery {
                     const content = await scrapedContent.evaluate(element => element.innerText)
 
                     if (! content) {
-                        continue
+                        return
                     }
 
                     if (! /\d/.test(content) && ! /[a-zA-Z]/.test(content)) {
-                        continue
+                        return
                     }
 
                     contents.push(new TextContent(content))
-                    continue
+                    return
                 }
 
                 if (classNames.includes('embed-item')) {
@@ -107,12 +111,12 @@ export default class ArticleContentQuery {
 
                     if (isTwitter) {
                         await pushNewTwitterContent(scrapedContent, browser, contents)
-                        continue
+                        return
                     }
                 }
 
                 if (classNames.includes('relatedContent-new')) {
-                    break
+                    return 'done'
                 }
 
                 const iframeSelector = 'iframe'
@@ -123,7 +127,47 @@ export default class ArticleContentQuery {
 
                 if (iframeSrc) {
                     contents.push(new EmbedContent(iframeSrc))
-                    continue
+                    return
+                }
+
+                const attributeNames = Object.values(await scrapedContent.evaluate(element => element.getAttributeNames()))
+
+                if (attributeNames.includes('data-widget')) {
+
+                    const dataWiget = await scrapedContent.evaluate(element => element.getAttribute('data-widget'))
+
+                    if (dataWiget === 'image') {
+                        const jpgSourceSelector = 'source[type="image/jpeg"]'
+
+                        const srcSet = await scrapedContent.evaluate(
+                            (element, jpgSourceSelector) => element.querySelector(jpgSourceSelector)?.getAttribute('srcset'),
+                            jpgSourceSelector
+                        )
+
+                        const caption = await scrapedContent.evaluate(element => element.innerText)
+
+                        if (srcSet && caption) {
+                            contents.push(new CaptionedImageContent(srcSet, caption))
+
+                            return
+                        }
+                    }
+                    
+                    if (dataWiget === 'mosaic') {
+                        const mosaicChildren = await scrapedContent.$$(':scope>*')
+
+                        for (const mosaicChildrenKey in mosaicChildren) {
+                            const mosaicChild = mosaicChildren[mosaicChildrenKey]
+
+                            const handleMosaicChildResult = handleScrapedContent(mosaicChild)
+
+                            if (handleMosaicChildResult === 'break') {
+                                return 'break'
+                            }
+                        }
+
+                        return
+                    }
                 }
             }
 
@@ -131,22 +175,22 @@ export default class ArticleContentQuery {
                 const content = await scrapedContent.evaluate(element => element.innerText)
 
                 if (! content) {
-                    continue
+                    return
                 }
 
                 contents.push(new BlockQuoteContent(content))
-                continue
+                return
             }
 
             if (tagName === 'H3' || tagName === 'H4') {
                 const content = await scrapedContent.evaluate(element => element.innerText)
 
                 if (! content) {
-                    continue
+                    return
                 }
 
                 contents.push(new TitleContent(content))
-                continue
+                return
             }
 
             if (tagName === 'DIV') {
@@ -156,7 +200,7 @@ export default class ArticleContentQuery {
                     classNames.includes('adgrid-ad-target')
                     || classNames.includes('adgrid-ad-container')
                 ) {
-                    continue; // Ads
+                    return; // Ads
                 }
 
                 if (classNames.includes('table-wrapper')) {
@@ -169,49 +213,49 @@ export default class ArticleContentQuery {
                         const imgSrc = await scrapedContent.evaluate((element, imgSelector) => element.querySelector(imgSelector).src, imgSelector)
                         contents.push(new CaptionedImageContent(imgSrc, caption))
 
-                        continue
+                        return
                     }
 
                     const content = caption
 
                     if (! content) {
-                        continue
+                        return
                     }
 
                     if (! /\d/.test(content) && ! /[a-zA-Z]/.test(content)) {
-                        continue
+                        return
                     }
 
                     contents.push(new TextContent(content))
 
-                    continue
+                    return
                 }
 
                 if (classNames.includes('content-header')) {
                     const content = await scrapedContent.evaluate(element => element.innerText)
 
                     if (! content) {
-                        continue
+                        return
                     }
 
                     contents.push(new TitleContent(content))
-                    continue
+                    return
                 }
 
                 if (classNames.includes('msnt-photo-thumb-gallery')) {
                     const imageSrc = await scrapedContent.evaluate(element => element.querySelector('source')?.dataset?.srcset)
 
                     if (! imageSrc) {
-                        continue
+                        return
                     }
 
                     contents.push(new ImageContent(imageSrc))
-                    continue
+                    return
                 }
 
                 if (classNames.includes('wrapper-related-item')) {
                     // link to another article, I won't use that
-                    continue
+                    return
                 }
 
                 
@@ -219,7 +263,7 @@ export default class ArticleContentQuery {
 
                 if (! divInnerHTML) {
                     // Empty div, whatever
-                    continue
+                    return
                 }
 
                 const isTwitter = await scrapedContent.evaluate(
@@ -228,22 +272,22 @@ export default class ArticleContentQuery {
 
                 if (isTwitter) {
                     await pushNewTwitterContent(scrapedContent, browser, contents)
-                    continue
+                    return
                 }
 
                 if (classNames.includes('twitter-tweet') && classNames.includes('twitter-tweet-rendered')) { // WTF is that weird paragraph class name ?
                     const content = await scrapedContent.evaluate(element => element.innerText)
 
                     if (! content) {
-                        continue
+                        return
                     }
 
                     if (! /\d/.test(content) && ! /[a-zA-Z]/.test(content)) {
-                        continue
+                        return
                     }
 
                     contents.push(new TextContent(content))
-                    continue
+                    return
                 }
 
                 if (debugMode) {
@@ -265,22 +309,31 @@ export default class ArticleContentQuery {
                     const liContent = await li.evaluate(element => element.innerText)
 
                     if (! liContent) {
-                        continue
+                        return
                     }
 
                     contents.push(new TextContent('- ' + liContent))
                 }
 
-                continue
+                return
             }
 
             if (debugMode) {
                 console.log('unknown tag')
                 console.log(tagName)
-                console.log(await scrapedContent.evaluate(element => element.innerHTML))
+                console.log(await scrapedContent.evaluate(element => element.outerHTML))
                 await page.waitForTimeout(90000)
             } else {
-                throw new Error('unknown tag ' + tagName + ', inner HTML : ' + await scrapedContent.evaluate(element => element.innerHTML))
+                throw new Error('unknown tag ' + tagName + ', outer HTML : ' + await scrapedContent.evaluate(element => element.outerHTML))
+            }
+        }
+
+        for (const scrapedContentKey in scrapedContents) {
+            const scrapedContent = scrapedContents[scrapedContentKey]
+            const handleResult = await handleScrapedContent(scrapedContent)
+
+            if (handleResult === 'break') {
+                break;
             }
         }
 
