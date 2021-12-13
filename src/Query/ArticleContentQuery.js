@@ -342,7 +342,7 @@ export default class ArticleContentQuery {
             const scrapedContent = scrapedContents[scrapedContentKey]
             const handleResult = await handleScrapedContent(scrapedContent)
 
-            if (handleResult === 'break') {
+            if (handleResult === doneString) {
                 break;
             }
         }
