@@ -75,7 +75,14 @@ for (const articleHeadlineKey in articleHeadlines) {
 
     const articleContentQuery = new ArticleContentQuery(page)
 
-    const articleContent = await articleContentQuery.getArticleContent(articleHeadline.link, debugMode)
+    let articleContent
+    try {
+        articleContent = await articleContentQuery.getArticleContent(articleHeadline.link, debugMode)
+    } catch (error) {
+        console.log('Error :' + error.toString())
+        console.log(error.stack)
+        continue
+    }
 
     if (debugMode) {
         console.log('Contents ' + articleContent.length)
