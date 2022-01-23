@@ -381,7 +381,7 @@ const getInnerTweetText = tweetSelector => {
 const getAuthorDisplayNameAndHandle = async (twitterPage, authorLinkSelector) => {
     const displayNameSelector = authorLinkSelector + '>div>div'
     const displayName = await twitterPage.evaluate(displayNameSelector => {
-        return document.querySelector(displayNameSelector).innerText
+        return document.querySelector(displayNameSelector)?.innerText
     }, displayNameSelector)
 
     const authorHandleSelector = authorLinkSelector + '>div>div+div'
@@ -448,7 +448,22 @@ const pushNewTwitterContent = async (scrapedContent, browser, contents) => {
     const mainTweetSelector = hasReply ? mainTweetSelectorIfReply : articleSelector
 
     const mainTweetContainerSelector = hasReply ? (mainTweetSelector + '>a+div>div+div') : articleSelector
-    const mainTweetAuthorLinkSelector = mainTweetContainerSelector + (hasReply ? ' a' : '>a+div>a+div>a')
+    let mainTweetAuthorLinkSelector
+
+    if (hasReply) {
+        mainTweetAuthorLinkSelector = mainTweetContainerSelector + ' a'
+    } else {
+        mainTweetAuthorLinkSelector = mainTweetContainerSelector + '>a+div>a+div>a'
+
+        if (! (await twitterPage.evaluate(mainTweetAuthorLinkSelector => {
+            return document.querySelector(mainTweetAuthorLinkSelector)
+        }, mainTweetAuthorLinkSelector))) {
+            mainTweetAuthorLinkSelector = 'article>a+div>div+div>a'
+            // ^ Fallback suite aux échecs de https://github.com/pierreminiggio/insideevs-scraper/actions/runs/1716997119
+            //   sur ce tweet : https://platform.twitter.com/embed/Tweet.html?dnt=false&embedId=twitter-widget-0&features=eyJ0ZndfZXhwZXJpbWVudHNfY29va2llX2V4cGlyYXRpb24iOnsiYnVja2V0IjoxMjA5NjAwLCJ2ZXJzaW9uIjpudWxsfSwidGZ3X2hvcml6b25fdHdlZXRfZW1iZWRfOTU1NSI6eyJidWNrZXQiOiJodGUiLCJ2ZXJzaW9uIjpudWxsfSwidGZ3X3NwYWNlX2NhcmQiOnsiYnVja2V0Ijoib2ZmIiwidmVyc2lvbiI6bnVsbH19&frame=false&hideCard=false&hideThread=false&id=1468243478333181952&lang=en&origin=https%3A%2F%2Finsideevs.com%2Fnews%2F553199%2Fbuttigieg-responds-elon-musk-wsj%2F&sessionId=dd00829d719d44a167f36cfe591d326b3f90d3a8&siteScreenName=InsideEVs&theme=light&widgetsVersion=75b3351%3A1642573356397&width=550px
+        }
+    }
+
     const mainTweetAuthor = await getAuthorDisplayNameAndHandle(twitterPage, mainTweetAuthorLinkSelector)
 
     const mainTweetContentSelector = mainTweetContainerSelector + '>div+div>div'
