@@ -384,6 +384,10 @@ const getAuthorDisplayNameAndHandle = async (twitterPage, authorLinkSelector) =>
         return document.querySelector(displayNameSelector)?.innerText
     }, displayNameSelector)
 
+    if (! displayName) {
+        throw new Error('Display name not found')
+    }
+
     const authorHandleSelector = authorLinkSelector + '>div>div+div'
     const authorHandle = await twitterPage.evaluate(authorHandleSelector => {
         return document.querySelector(authorHandleSelector).innerText
