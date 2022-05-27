@@ -153,6 +153,12 @@ export default class ArticleContentQuery {
 
                             return
                         }
+
+                        if (srcSet) {
+                            contents.push(new ImageContent(srcSet))
+
+                            return
+                        }
                     }
                     
                     if (dataWiget === 'mosaic') {
