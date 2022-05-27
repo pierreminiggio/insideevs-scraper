@@ -112,7 +112,7 @@ export default class ArticleContentQuery {
                     )
 
                     if (isTwitter) {
-                        await pushNewTwitterContent(scrapedContent, browser, contents)
+                        await pushNewTwitterContent(scrapedContent, browser, contents, debugMode)
                         return
                     }
                 }
@@ -281,7 +281,7 @@ export default class ArticleContentQuery {
                 )
 
                 if (isTwitter) {
-                    await pushNewTwitterContent(scrapedContent, browser, contents)
+                    await pushNewTwitterContent(scrapedContent, browser, contents, debugMode)
                     return
                 }
 
@@ -375,16 +375,26 @@ const getInnerTweetText = tweetSelector => {
 /**
  * @param {import('puppeteer').Page} twitterPage 
  * @param {string} authorLinkSelector 
+ * @param {boolean} debugMode
  * 
  * @returns {Promise<TweetAuthor>}
  */
-const getAuthorDisplayNameAndHandle = async (twitterPage, authorLinkSelector) => {
+const getAuthorDisplayNameAndHandle = async (twitterPage, authorLinkSelector, debugMode) => {
     const displayNameSelector = authorLinkSelector + '>div>div'
     const displayName = await twitterPage.evaluate(displayNameSelector => {
         return document.querySelector(displayNameSelector)?.innerText
     }, displayNameSelector)
 
     if (! displayName) {
+        if (debugMode) {
+            console.log(authorLinkSelector)
+            console.log(displayNameSelector)
+            console.log('Display name not found')
+            await twitterPage.waitForTimeout(90000)
+            await twitterPage.waitForTimeout(90000)
+            await twitterPage.waitForTimeout(90000)
+        }
+        
         throw new Error('Display name not found')
     }
 
@@ -400,10 +410,11 @@ const getAuthorDisplayNameAndHandle = async (twitterPage, authorLinkSelector) =>
  * @param {import('puppeteer').ElementHandle<Element>} scrapedContent
  * @param {import('puppeteer').Browser} browser
  * @param {Array<Content>} contents
+ * @param {boolean} debugMode
  * 
  * @returns {void} 
  */
-const pushNewTwitterContent = async (scrapedContent, browser, contents) => {
+const pushNewTwitterContent = async (scrapedContent, browser, contents, debugMode) => {
     const iframeSelector = 'iframe'
 
     let twitterSrc = null
@@ -465,10 +476,18 @@ const pushNewTwitterContent = async (scrapedContent, browser, contents) => {
             mainTweetAuthorLinkSelector = 'article>a+div>div+div>a'
             // ^ Fallback suite aux échecs de https://github.com/pierreminiggio/insideevs-scraper/actions/runs/1716997119
             //   sur ce tweet : https://platform.twitter.com/embed/Tweet.html?dnt=false&embedId=twitter-widget-0&features=eyJ0ZndfZXhwZXJpbWVudHNfY29va2llX2V4cGlyYXRpb24iOnsiYnVja2V0IjoxMjA5NjAwLCJ2ZXJzaW9uIjpudWxsfSwidGZ3X2hvcml6b25fdHdlZXRfZW1iZWRfOTU1NSI6eyJidWNrZXQiOiJodGUiLCJ2ZXJzaW9uIjpudWxsfSwidGZ3X3NwYWNlX2NhcmQiOnsiYnVja2V0Ijoib2ZmIiwidmVyc2lvbiI6bnVsbH19&frame=false&hideCard=false&hideThread=false&id=1468243478333181952&lang=en&origin=https%3A%2F%2Finsideevs.com%2Fnews%2F553199%2Fbuttigieg-responds-elon-musk-wsj%2F&sessionId=dd00829d719d44a167f36cfe591d326b3f90d3a8&siteScreenName=InsideEVs&theme=light&widgetsVersion=75b3351%3A1642573356397&width=550px
+
+        }
+
+        if (! (await twitterPage.evaluate(mainTweetAuthorLinkSelector => {
+            return document.querySelector(mainTweetAuthorLinkSelector)
+        }, mainTweetAuthorLinkSelector))) {
+            mainTweetAuthorLinkSelector = 'article>a+div>div+div>div>div>a'
+            // ^ Fallback suite à l'échec sur ce tweet : https://platform.twitter.com/embed/Tweet.html?dnt=false&embedId=twitter-widget-0&features=eyJ0ZndfZXhwZXJpbWVudHNfY29va2llX2V4cGlyYXRpb24iOnsiYnVja2V0IjoxMjA5NjAwLCJ2ZXJzaW9uIjpudWxsfSwidGZ3X3NlbnNpdGl2ZV9tZWRpYV9pbnRlcnN0aXRpYWxfMTM5NjMiOnsiYnVja2V0IjoiaW50ZXJzdGl0aWFsIiwidmVyc2lvbiI6bnVsbH0sInRmd190d2VldF9yZXN1bHRfbWlncmF0aW9uXzEzOTc5Ijp7ImJ1Y2tldCI6InR3ZWV0X3Jlc3VsdCIsInZlcnNpb24iOm51bGx9fQ%3D%3D&frame=false&hideCard=false&hideThread=false&id=1521115986711175168&lang=en&origin=https%3A%2F%2Finsideevs.com%2Fnews%2F583980%2Felon-musk-starlink-150k-users-ukraine%2F&sessionId=8f0d05b131528a8e6cdfab76910054efbbae3d18&siteScreenName=InsideEVs&theme=light&widgetsVersion=c8fe9736dd6fb%3A1649830956492&width=550px
         }
     }
 
-    const mainTweetAuthor = await getAuthorDisplayNameAndHandle(twitterPage, mainTweetAuthorLinkSelector)
+    const mainTweetAuthor = await getAuthorDisplayNameAndHandle(twitterPage, mainTweetAuthorLinkSelector, debugMode)
 
     const mainTweetContentSelector = mainTweetContainerSelector + '>div+div>div'
     const mainTweetContent = await twitterPage.evaluate(getInnerTweetText, mainTweetContentSelector)
@@ -478,8 +497,15 @@ const pushNewTwitterContent = async (scrapedContent, browser, contents) => {
     let replyTweet = null
 
     if (hasReply) {
-        const replyTweetSelector = mainTweetSelector + '+div>div>a'
-        const replyTweetAuthor = await getAuthorDisplayNameAndHandle(twitterPage, replyTweetSelector)
+        let replyTweetSelector = mainTweetSelector + '+div>div>a'
+        if (! (await twitterPage.evaluate(replyTweetSelector => {
+            return document.querySelector(replyTweetSelector)
+        }, replyTweetSelector))) {
+            replyTweetSelector = mainTweetSelector + '+div>div>div>div>a'
+            // ^ Fallback suite à l'échec sur ce tweet : https://platform.twitter.com/embed/Tweet.html?dnt=false&embedId=twitter-widget-0&features=eyJ0ZndfZXhwZXJpbWVudHNfY29va2llX2V4cGlyYXRpb24iOnsiYnVja2V0IjoxMjA5NjAwLCJ2ZXJzaW9uIjpudWxsfSwidGZ3X3NlbnNpdGl2ZV9tZWRpYV9pbnRlcnN0aXRpYWxfMTM5NjMiOnsiYnVja2V0IjoiaW50ZXJzdGl0aWFsIiwidmVyc2lvbiI6bnVsbH0sInRmd190d2VldF9yZXN1bHRfbWlncmF0aW9uXzEzOTc5Ijp7ImJ1Y2tldCI6InR3ZWV0X3Jlc3VsdCIsInZlcnNpb24iOm51bGx9fQ%3D%3D&frame=false&hideCard=false&hideThread=false&id=1519850299757846530&lang=en&origin=https%3A%2F%2Finsideevs.com%2Fnews%2F582822%2Fmusk-sells-4-billion-usd-worth-tesla-shares-no-further-sales-planned%2F&sessionId=6cf518b44c6433f611a74492a167c8718271e46c&siteScreenName=InsideEVs&theme=light&widgetsVersion=c8fe9736dd6fb%3A1649830956492&width=550px
+        }
+        
+        const replyTweetAuthor = await getAuthorDisplayNameAndHandle(twitterPage, replyTweetSelector, debugMode)
         const replyTweetContentSelector = mainTweetSelector + '+div+div>div'
         const replyTweetContent = await twitterPage.evaluate(getInnerTweetText, replyTweetContentSelector)
 
