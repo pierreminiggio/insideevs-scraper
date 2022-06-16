@@ -176,6 +176,16 @@ export default class ArticleContentQuery {
 
                         return
                     }
+                    
+                    if (dataWiget === 'special_image') {
+                        const imgSrc = await scrapedContent.evaluate(element => element.querySelector('img')?.src)
+                        
+                        if (srcSet) {
+                            contents.push(new ImageContent(imgSrc))
+
+                            return
+                        }
+                    }
                 }
             }
 
