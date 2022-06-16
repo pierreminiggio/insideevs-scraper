@@ -180,7 +180,7 @@ export default class ArticleContentQuery {
                     if (dataWiget === 'special_image') {
                         const imgSrc = await scrapedContent.evaluate(element => element.querySelector('img')?.src)
                         
-                        if (srcSet) {
+                        if (imgSrc) {
                             contents.push(new ImageContent(imgSrc))
 
                             return
