@@ -400,19 +400,20 @@ const getAuthorDisplayNameAndHandle = async (twitterPage, authorLinkSelector, de
         console.log('Author link selector : ' + authorLinkSelector)
     }
     
-    let displayNameSelector = authorLinkSelector + '>div>div'
+    let displayNameSelector
 
-    if (! (await twitterPage.evaluate(displayNameSelector => {
-        return document.querySelector(displayNameSelector)
-    }, displayNameSelector))) {
+    if (authorLinkSelector === hasReplyMainTweetSelectorVersion3) {
         if (debugMode) {
-            console.log('Display name selector : ' + displayNameSelector + ' is incorrect')
+            console.log('hasReplyMainTweetSelectorVersion3 detected.')
         }
-        // displayNameSelector = 'article>div>div+div>div>div>div'
-        // if (debugMode) {
-        //     console.log('Trying ' + displayNameSelector + ' ...')
-        // }
+        displayNameSelector = hasReplyMainTweetSelectorVersion3 + '>a'
+
+        if (debugMode) {
+            console.log('Trying ' + displayNameSelector + ' ...')
+        }
         // ^ Fallback suite à l'échec sur ce tweet : https://platform.twitter.com/embed/Tweet.html?dnt=false&embedId=twitter-widget-0&features=eyJ0ZndfdGltZWxpbmVfbGlzdCI6eyJidWNrZXQiOlsibGlua3RyLmVlIiwidHIuZWUiXSwidmVyc2lvbiI6bnVsbH0sInRmd19ob3Jpem9uX3RpbWVsaW5lXzEyMDM0Ijp7ImJ1Y2tldCI6InRyZWF0bWVudCIsInZlcnNpb24iOjd9LCJ0ZndfdHdlZXRfZWRpdF9iYWNrZW5kIjp7ImJ1Y2tldCI6Im9uIiwidmVyc2lvbiI6bnVsbH0sInRmd19yZWZzcmNfc2Vzc2lvbiI6eyJidWNrZXQiOiJvbiIsInZlcnNpb24iOm51bGx9LCJ0ZndfY2hpbl9waWxsc18xNDc0MSI6eyJidWNrZXQiOiJjb2xvcl9pY29ucyIsInZlcnNpb24iOm51bGx9LCJ0ZndfdHdlZXRfcmVzdWx0X21pZ3JhdGlvbl8xMzk3OSI6eyJidWNrZXQiOiJ0d2VldF9yZXN1bHQiLCJ2ZXJzaW9uIjpudWxsfSwidGZ3X3NlbnNpdGl2ZV9tZWRpYV9pbnRlcnN0aXRpYWxfMTM5NjMiOnsiYnVja2V0IjoiaW50ZXJzdGl0aWFsIiwidmVyc2lvbiI6bnVsbH0sInRmd19leHBlcmltZW50c19jb29raWVfZXhwaXJhdGlvbiI6eyJidWNrZXQiOjEyMDk2MDAsInZlcnNpb24iOm51bGx9LCJ0ZndfZHVwbGljYXRlX3NjcmliZXNfdG9fc2V0dGluZ3MiOnsiYnVja2V0Ijoib24iLCJ2ZXJzaW9uIjpudWxsfSwidGZ3X3R3ZWV0X2VkaXRfZnJvbnRlbmQiOnsiYnVja2V0Ijoib2ZmIiwidmVyc2lvbiI6bnVsbH19&frame=false&hideCard=false&hideThread=false&id=1546344529460174849&lang=en&origin=https%3A%2F%2Finsideevs.com%2Fnews%2F597527%2Ftesla-elon-musk-mocks-twitter-amid-lawsuit%2F&sessionId=dc0de48af6485c51cd396674c0f8d706e47f7d8f&siteScreenName=InsideEVs&theme=light&widgetsVersion=31f0cdc1eaa0f%3A1660602114609&width=550px
+    } else {
+        displayNameSelector = authorLinkSelector + '>div>div'
     }
 
     if (! (await twitterPage.evaluate(displayNameSelector => {
@@ -444,13 +445,44 @@ const getAuthorDisplayNameAndHandle = async (twitterPage, authorLinkSelector, de
         throw new Error('Display name not found')
     }
 
-    const authorHandleSelector = authorLinkSelector + '>div>div+div'
+    let authorHandleSelector = authorLinkSelector + '>div>div+div'
+
+    if (! (await twitterPage.evaluate(authorHandleSelector => {
+        return document.querySelector(authorHandleSelector)
+    }, authorHandleSelector))) {
+        if (authorLinkSelector === hasReplyMainTweetSelectorVersion3) {
+            if (debugMode) {
+                console.log('Author handle selector : ' + authorHandleSelector + ' is incorrect')
+            }
+            authorHandleSelector = hasReplyMainTweetSelectorVersion3 + '>div>a'
+
+            if (debugMode) {
+                console.log('Trying ' + authorHandleSelector + ' ...')
+            }
+            // ^ Fallback suite à l'échec sur ce tweet : https://platform.twitter.com/embed/Tweet.html?dnt=false&embedId=twitter-widget-0&features=eyJ0ZndfdGltZWxpbmVfbGlzdCI6eyJidWNrZXQiOlsibGlua3RyLmVlIiwidHIuZWUiXSwidmVyc2lvbiI6bnVsbH0sInRmd19ob3Jpem9uX3RpbWVsaW5lXzEyMDM0Ijp7ImJ1Y2tldCI6InRyZWF0bWVudCIsInZlcnNpb24iOjd9LCJ0ZndfdHdlZXRfZWRpdF9iYWNrZW5kIjp7ImJ1Y2tldCI6Im9uIiwidmVyc2lvbiI6bnVsbH0sInRmd19yZWZzcmNfc2Vzc2lvbiI6eyJidWNrZXQiOiJvbiIsInZlcnNpb24iOm51bGx9LCJ0ZndfY2hpbl9waWxsc18xNDc0MSI6eyJidWNrZXQiOiJjb2xvcl9pY29ucyIsInZlcnNpb24iOm51bGx9LCJ0ZndfdHdlZXRfcmVzdWx0X21pZ3JhdGlvbl8xMzk3OSI6eyJidWNrZXQiOiJ0d2VldF9yZXN1bHQiLCJ2ZXJzaW9uIjpudWxsfSwidGZ3X3NlbnNpdGl2ZV9tZWRpYV9pbnRlcnN0aXRpYWxfMTM5NjMiOnsiYnVja2V0IjoiaW50ZXJzdGl0aWFsIiwidmVyc2lvbiI6bnVsbH0sInRmd19leHBlcmltZW50c19jb29raWVfZXhwaXJhdGlvbiI6eyJidWNrZXQiOjEyMDk2MDAsInZlcnNpb24iOm51bGx9LCJ0ZndfZHVwbGljYXRlX3NjcmliZXNfdG9fc2V0dGluZ3MiOnsiYnVja2V0Ijoib24iLCJ2ZXJzaW9uIjpudWxsfSwidGZ3X3R3ZWV0X2VkaXRfZnJvbnRlbmQiOnsiYnVja2V0Ijoib2ZmIiwidmVyc2lvbiI6bnVsbH19&frame=false&hideCard=false&hideThread=false&id=1546344529460174849&lang=en&origin=https%3A%2F%2Finsideevs.com%2Fnews%2F597527%2Ftesla-elon-musk-mocks-twitter-amid-lawsuit%2F&sessionId=dc0de48af6485c51cd396674c0f8d706e47f7d8f&siteScreenName=InsideEVs&theme=light&widgetsVersion=31f0cdc1eaa0f%3A1660602114609&width=550px
+        }
+    }
+
+    if (! (await twitterPage.evaluate(authorHandleSelector => {
+        return document.querySelector(authorHandleSelector)
+    }, authorHandleSelector))) {
+        if (debugMode) {
+            console.log('Author handle selector : ' + authorHandleSelector + ' is incorrect')
+            await twitterPage.waitForTimeout(90000)
+            await twitterPage.waitForTimeout(90000)
+            await twitterPage.waitForTimeout(90000)
+        }
+        throw new Error('Author handle selector is incorrect')
+    }
+
     const authorHandle = await twitterPage.evaluate(authorHandleSelector => {
         return document.querySelector(authorHandleSelector)?.innerText
     }, authorHandleSelector)
 
     return new TweetAuthor(displayName, authorHandle)
 }
+
+const hasReplyMainTweetSelectorVersion3 = 'article>div>div+div>div>div>div'
 
 /**
  * @param {import('puppeteer').ElementHandle<Element>} scrapedContent
@@ -512,7 +544,8 @@ const pushNewTwitterContent = async (scrapedContent, browser, contents, debugMod
     let mainTweetAuthorLinkSelector
 
     if (debugMode) {
-        console.log('Tweet has a reply : ' + parseInt(hasReply))
+        console.log('Tweet has a reply : ')
+        console.log(hasReply)
         console.log('Main tweet container selector : ' + mainTweetContainerSelector)
     }
 
@@ -542,7 +575,7 @@ const pushNewTwitterContent = async (scrapedContent, browser, contents, debugMod
             if (debugMode) {
                 console.log('Main tweet selector : ' + mainTweetAuthorLinkSelector + ' is incorrect')
             }
-            mainTweetAuthorLinkSelector = 'article>a+div>div+div>div>div>a'
+            mainTweetAuthorLinkSelector = 'article>a+div>div+div>a'
             if (debugMode) {
                 console.log('Trying ' + mainTweetAuthorLinkSelector + ' ...')
             }
@@ -555,7 +588,7 @@ const pushNewTwitterContent = async (scrapedContent, browser, contents, debugMod
             if (debugMode) {
                 console.log('Main tweet selector : ' + mainTweetAuthorLinkSelector + ' is incorrect')
             }
-            mainTweetAuthorLinkSelector = 'article>div>div+div>div>div>div'
+            mainTweetAuthorLinkSelector = hasReplyMainTweetSelectorVersion3
             if (debugMode) {
                 console.log('Trying ' + mainTweetAuthorLinkSelector + ' ...')
             }
