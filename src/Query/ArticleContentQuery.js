@@ -396,7 +396,37 @@ const getInnerTweetText = tweetSelector => {
  * @returns {Promise<TweetAuthor>}
  */
 const getAuthorDisplayNameAndHandle = async (twitterPage, authorLinkSelector, debugMode) => {
-    const displayNameSelector = authorLinkSelector + '>div>div'
+    if (debugMode) {
+        console.log('Author link selector : ' + authorLinkSelector)
+    }
+    
+    let displayNameSelector = authorLinkSelector + '>div>div'
+
+    if (! (await twitterPage.evaluate(displayNameSelector => {
+        return document.querySelector(displayNameSelector)
+    }, displayNameSelector))) {
+        if (debugMode) {
+            console.log('Display name selector : ' + displayNameSelector + ' is incorrect')
+        }
+        // displayNameSelector = 'article>div>div+div>div>div>div'
+        // if (debugMode) {
+        //     console.log('Trying ' + displayNameSelector + ' ...')
+        // }
+        // ^ Fallback suite à l'échec sur ce tweet : https://platform.twitter.com/embed/Tweet.html?dnt=false&embedId=twitter-widget-0&features=eyJ0ZndfdGltZWxpbmVfbGlzdCI6eyJidWNrZXQiOlsibGlua3RyLmVlIiwidHIuZWUiXSwidmVyc2lvbiI6bnVsbH0sInRmd19ob3Jpem9uX3RpbWVsaW5lXzEyMDM0Ijp7ImJ1Y2tldCI6InRyZWF0bWVudCIsInZlcnNpb24iOjd9LCJ0ZndfdHdlZXRfZWRpdF9iYWNrZW5kIjp7ImJ1Y2tldCI6Im9uIiwidmVyc2lvbiI6bnVsbH0sInRmd19yZWZzcmNfc2Vzc2lvbiI6eyJidWNrZXQiOiJvbiIsInZlcnNpb24iOm51bGx9LCJ0ZndfY2hpbl9waWxsc18xNDc0MSI6eyJidWNrZXQiOiJjb2xvcl9pY29ucyIsInZlcnNpb24iOm51bGx9LCJ0ZndfdHdlZXRfcmVzdWx0X21pZ3JhdGlvbl8xMzk3OSI6eyJidWNrZXQiOiJ0d2VldF9yZXN1bHQiLCJ2ZXJzaW9uIjpudWxsfSwidGZ3X3NlbnNpdGl2ZV9tZWRpYV9pbnRlcnN0aXRpYWxfMTM5NjMiOnsiYnVja2V0IjoiaW50ZXJzdGl0aWFsIiwidmVyc2lvbiI6bnVsbH0sInRmd19leHBlcmltZW50c19jb29raWVfZXhwaXJhdGlvbiI6eyJidWNrZXQiOjEyMDk2MDAsInZlcnNpb24iOm51bGx9LCJ0ZndfZHVwbGljYXRlX3NjcmliZXNfdG9fc2V0dGluZ3MiOnsiYnVja2V0Ijoib24iLCJ2ZXJzaW9uIjpudWxsfSwidGZ3X3R3ZWV0X2VkaXRfZnJvbnRlbmQiOnsiYnVja2V0Ijoib2ZmIiwidmVyc2lvbiI6bnVsbH19&frame=false&hideCard=false&hideThread=false&id=1546344529460174849&lang=en&origin=https%3A%2F%2Finsideevs.com%2Fnews%2F597527%2Ftesla-elon-musk-mocks-twitter-amid-lawsuit%2F&sessionId=dc0de48af6485c51cd396674c0f8d706e47f7d8f&siteScreenName=InsideEVs&theme=light&widgetsVersion=31f0cdc1eaa0f%3A1660602114609&width=550px
+    }
+
+    if (! (await twitterPage.evaluate(displayNameSelector => {
+        return document.querySelector(displayNameSelector)
+    }, displayNameSelector))) {
+        if (debugMode) {
+            console.log('Display name selector : ' + displayNameSelector + ' is incorrect')
+            await twitterPage.waitForTimeout(90000)
+            await twitterPage.waitForTimeout(90000)
+            await twitterPage.waitForTimeout(90000)
+        }
+        throw new Error('Display name selector is incorrect')
+    }
+
     const displayName = await twitterPage.evaluate(displayNameSelector => {
         return document.querySelector(displayNameSelector)?.innerText
     }, displayNameSelector)
@@ -410,13 +440,13 @@ const getAuthorDisplayNameAndHandle = async (twitterPage, authorLinkSelector, de
             await twitterPage.waitForTimeout(90000)
             await twitterPage.waitForTimeout(90000)
         }
-        
+
         throw new Error('Display name not found')
     }
 
     const authorHandleSelector = authorLinkSelector + '>div>div+div'
     const authorHandle = await twitterPage.evaluate(authorHandleSelector => {
-        return document.querySelector(authorHandleSelector).innerText
+        return document.querySelector(authorHandleSelector)?.innerText
     }, authorHandleSelector)
 
     return new TweetAuthor(displayName, authorHandle)
@@ -473,13 +503,18 @@ const pushNewTwitterContent = async (scrapedContent, browser, contents, debugMod
 
     const mainTweetSelectorIfReply = articleSelector + '>article'
     const hasReply = await twitterPage.evaluate(mainTweetSelectorIfReply => {
-        return document.querySelector(mainTweetSelectorIfReply) !== null
+        return document?.querySelector(mainTweetSelectorIfReply) !== null
     }, mainTweetSelectorIfReply)
 
     const mainTweetSelector = hasReply ? mainTweetSelectorIfReply : articleSelector
 
     const mainTweetContainerSelector = hasReply ? (mainTweetSelector + '>a+div>div+div') : articleSelector
     let mainTweetAuthorLinkSelector
+
+    if (debugMode) {
+        console.log('Tweet has a reply : ' + parseInt(hasReply))
+        console.log('Main tweet container selector : ' + mainTweetContainerSelector)
+    }
 
     if (hasReply) {
         mainTweetAuthorLinkSelector = mainTweetContainerSelector + ' a'
@@ -489,7 +524,13 @@ const pushNewTwitterContent = async (scrapedContent, browser, contents, debugMod
         if (! (await twitterPage.evaluate(mainTweetAuthorLinkSelector => {
             return document.querySelector(mainTweetAuthorLinkSelector)
         }, mainTweetAuthorLinkSelector))) {
+            if (debugMode) {
+                console.log('Main tweet selector : ' + mainTweetAuthorLinkSelector + ' is incorrect')
+            }
             mainTweetAuthorLinkSelector = 'article>a+div>div+div>a'
+            if (debugMode) {
+                console.log('Trying ' + mainTweetAuthorLinkSelector + ' ...')
+            }
             // ^ Fallback suite aux échecs de https://github.com/pierreminiggio/insideevs-scraper/actions/runs/1716997119
             //   sur ce tweet : https://platform.twitter.com/embed/Tweet.html?dnt=false&embedId=twitter-widget-0&features=eyJ0ZndfZXhwZXJpbWVudHNfY29va2llX2V4cGlyYXRpb24iOnsiYnVja2V0IjoxMjA5NjAwLCJ2ZXJzaW9uIjpudWxsfSwidGZ3X2hvcml6b25fdHdlZXRfZW1iZWRfOTU1NSI6eyJidWNrZXQiOiJodGUiLCJ2ZXJzaW9uIjpudWxsfSwidGZ3X3NwYWNlX2NhcmQiOnsiYnVja2V0Ijoib2ZmIiwidmVyc2lvbiI6bnVsbH19&frame=false&hideCard=false&hideThread=false&id=1468243478333181952&lang=en&origin=https%3A%2F%2Finsideevs.com%2Fnews%2F553199%2Fbuttigieg-responds-elon-musk-wsj%2F&sessionId=dd00829d719d44a167f36cfe591d326b3f90d3a8&siteScreenName=InsideEVs&theme=light&widgetsVersion=75b3351%3A1642573356397&width=550px
 
@@ -498,11 +539,34 @@ const pushNewTwitterContent = async (scrapedContent, browser, contents, debugMod
         if (! (await twitterPage.evaluate(mainTweetAuthorLinkSelector => {
             return document.querySelector(mainTweetAuthorLinkSelector)
         }, mainTweetAuthorLinkSelector))) {
+            if (debugMode) {
+                console.log('Main tweet selector : ' + mainTweetAuthorLinkSelector + ' is incorrect')
+            }
             mainTweetAuthorLinkSelector = 'article>a+div>div+div>div>div>a'
+            if (debugMode) {
+                console.log('Trying ' + mainTweetAuthorLinkSelector + ' ...')
+            }
             // ^ Fallback suite à l'échec sur ce tweet : https://platform.twitter.com/embed/Tweet.html?dnt=false&embedId=twitter-widget-0&features=eyJ0ZndfZXhwZXJpbWVudHNfY29va2llX2V4cGlyYXRpb24iOnsiYnVja2V0IjoxMjA5NjAwLCJ2ZXJzaW9uIjpudWxsfSwidGZ3X3NlbnNpdGl2ZV9tZWRpYV9pbnRlcnN0aXRpYWxfMTM5NjMiOnsiYnVja2V0IjoiaW50ZXJzdGl0aWFsIiwidmVyc2lvbiI6bnVsbH0sInRmd190d2VldF9yZXN1bHRfbWlncmF0aW9uXzEzOTc5Ijp7ImJ1Y2tldCI6InR3ZWV0X3Jlc3VsdCIsInZlcnNpb24iOm51bGx9fQ%3D%3D&frame=false&hideCard=false&hideThread=false&id=1521115986711175168&lang=en&origin=https%3A%2F%2Finsideevs.com%2Fnews%2F583980%2Felon-musk-starlink-150k-users-ukraine%2F&sessionId=8f0d05b131528a8e6cdfab76910054efbbae3d18&siteScreenName=InsideEVs&theme=light&widgetsVersion=c8fe9736dd6fb%3A1649830956492&width=550px
+        }
+
+        if (! (await twitterPage.evaluate(mainTweetAuthorLinkSelector => {
+            return document.querySelector(mainTweetAuthorLinkSelector)
+        }, mainTweetAuthorLinkSelector))) {
+            if (debugMode) {
+                console.log('Main tweet selector : ' + mainTweetAuthorLinkSelector + ' is incorrect')
+            }
+            mainTweetAuthorLinkSelector = 'article>div>div+div>div>div>div'
+            if (debugMode) {
+                console.log('Trying ' + mainTweetAuthorLinkSelector + ' ...')
+            }
+            // ^ Fallback suite à l'échec sur ce tweet : https://platform.twitter.com/embed/Tweet.html?dnt=false&embedId=twitter-widget-0&features=eyJ0ZndfdGltZWxpbmVfbGlzdCI6eyJidWNrZXQiOlsibGlua3RyLmVlIiwidHIuZWUiXSwidmVyc2lvbiI6bnVsbH0sInRmd19ob3Jpem9uX3RpbWVsaW5lXzEyMDM0Ijp7ImJ1Y2tldCI6InRyZWF0bWVudCIsInZlcnNpb24iOjd9LCJ0ZndfdHdlZXRfZWRpdF9iYWNrZW5kIjp7ImJ1Y2tldCI6Im9uIiwidmVyc2lvbiI6bnVsbH0sInRmd19yZWZzcmNfc2Vzc2lvbiI6eyJidWNrZXQiOiJvbiIsInZlcnNpb24iOm51bGx9LCJ0ZndfY2hpbl9waWxsc18xNDc0MSI6eyJidWNrZXQiOiJjb2xvcl9pY29ucyIsInZlcnNpb24iOm51bGx9LCJ0ZndfdHdlZXRfcmVzdWx0X21pZ3JhdGlvbl8xMzk3OSI6eyJidWNrZXQiOiJ0d2VldF9yZXN1bHQiLCJ2ZXJzaW9uIjpudWxsfSwidGZ3X3NlbnNpdGl2ZV9tZWRpYV9pbnRlcnN0aXRpYWxfMTM5NjMiOnsiYnVja2V0IjoiaW50ZXJzdGl0aWFsIiwidmVyc2lvbiI6bnVsbH0sInRmd19leHBlcmltZW50c19jb29raWVfZXhwaXJhdGlvbiI6eyJidWNrZXQiOjEyMDk2MDAsInZlcnNpb24iOm51bGx9LCJ0ZndfZHVwbGljYXRlX3NjcmliZXNfdG9fc2V0dGluZ3MiOnsiYnVja2V0Ijoib24iLCJ2ZXJzaW9uIjpudWxsfSwidGZ3X3R3ZWV0X2VkaXRfZnJvbnRlbmQiOnsiYnVja2V0Ijoib2ZmIiwidmVyc2lvbiI6bnVsbH19&frame=false&hideCard=false&hideThread=false&id=1546344529460174849&lang=en&origin=https%3A%2F%2Finsideevs.com%2Fnews%2F597527%2Ftesla-elon-musk-mocks-twitter-amid-lawsuit%2F&sessionId=dc0de48af6485c51cd396674c0f8d706e47f7d8f&siteScreenName=InsideEVs&theme=light&widgetsVersion=31f0cdc1eaa0f%3A1660602114609&width=550px
         }
     }
 
+    if (debugMode) {
+        console.log('Main Tweet')
+    }
+    
     const mainTweetAuthor = await getAuthorDisplayNameAndHandle(twitterPage, mainTweetAuthorLinkSelector, debugMode)
 
     const mainTweetContentSelector = mainTweetContainerSelector + '>div+div>div'
@@ -521,6 +585,10 @@ const pushNewTwitterContent = async (scrapedContent, browser, contents, debugMod
             // ^ Fallback suite à l'échec sur ce tweet : https://platform.twitter.com/embed/Tweet.html?dnt=false&embedId=twitter-widget-0&features=eyJ0ZndfZXhwZXJpbWVudHNfY29va2llX2V4cGlyYXRpb24iOnsiYnVja2V0IjoxMjA5NjAwLCJ2ZXJzaW9uIjpudWxsfSwidGZ3X3NlbnNpdGl2ZV9tZWRpYV9pbnRlcnN0aXRpYWxfMTM5NjMiOnsiYnVja2V0IjoiaW50ZXJzdGl0aWFsIiwidmVyc2lvbiI6bnVsbH0sInRmd190d2VldF9yZXN1bHRfbWlncmF0aW9uXzEzOTc5Ijp7ImJ1Y2tldCI6InR3ZWV0X3Jlc3VsdCIsInZlcnNpb24iOm51bGx9fQ%3D%3D&frame=false&hideCard=false&hideThread=false&id=1519850299757846530&lang=en&origin=https%3A%2F%2Finsideevs.com%2Fnews%2F582822%2Fmusk-sells-4-billion-usd-worth-tesla-shares-no-further-sales-planned%2F&sessionId=6cf518b44c6433f611a74492a167c8718271e46c&siteScreenName=InsideEVs&theme=light&widgetsVersion=c8fe9736dd6fb%3A1649830956492&width=550px
         }
         
+        if (debugMode) {
+            console.log('Reply Tweet')
+        }
+
         const replyTweetAuthor = await getAuthorDisplayNameAndHandle(twitterPage, replyTweetSelector, debugMode)
         const replyTweetContentSelector = mainTweetSelector + '+div+div>div'
         const replyTweetContent = await twitterPage.evaluate(getInnerTweetText, replyTweetContentSelector)
